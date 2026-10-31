@@ -12,6 +12,7 @@ const restartBtn = document.getElementById('restartBtn');
 const soundToggle = document.getElementById('soundToggle');
 const soundIcon = document.getElementById('soundIcon');
 const bgm = document.getElementById('bgm');
+const gameOverAudio = document.getElementById('gameOverAudio');
 const finalScoreEl = document.getElementById('finalScore');
 const bestScoreEl = document.getElementById('bestScore');
 
@@ -95,7 +96,8 @@ soundToggle.addEventListener('click', (e) => {
   soundEnabled = !soundEnabled;
   soundIcon.textContent = soundEnabled ? '🔊' : '🔇';
   if (!soundEnabled) {
-    bgm.pause();
+    if (bgm) bgm.pause();
+    if (gameOverAudio) gameOverAudio.pause();
   } else if (currentState === STATES.PLAYING) {
     bgm.play().catch(() => {});
   }
@@ -530,6 +532,11 @@ function startGame() {
   startScreen.classList.remove('active');
   gameOverScreen.classList.remove('active');
 
+  if (gameOverAudio) {
+    gameOverAudio.pause();
+    gameOverAudio.currentTime = 0;
+  }
+
   if (soundEnabled && bgm) {
     bgm.volume = 0.25; // Song starts low and rises slowly while playing
     bgm.currentTime = 0;
@@ -537,14 +544,20 @@ function startGame() {
   }
 }
 
-// Trigger Game Over - SONG STOPS IMMEDIATELY
+// Trigger Game Over - SONG STOPS IMMEDIATELY & GAME OVER AUDIO PLAYS
 function triggerGameOver() {
   if (currentState === STATES.GAMEOVER) return;
   currentState = STATES.GAMEOVER;
 
-  // STOP SONG IMMEDIATELY WHEN LOST
+  // STOP BACKGROUND MUSIC IMMEDIATELY
   if (bgm) {
     bgm.pause();
+  }
+
+  // PLAY GAME OVER AUDIO BITE
+  if (soundEnabled && gameOverAudio) {
+    gameOverAudio.currentTime = 0;
+    gameOverAudio.play().catch(() => {});
   }
 
   playHitSound();
