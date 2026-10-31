@@ -16,7 +16,6 @@ const bgm = document.getElementById('bgm');
 const gameOverAudio = document.getElementById('gameOverAudio');
 const finalScoreEl = document.getElementById('finalScore');
 const bestScoreEl = document.getElementById('bestScore');
-const musicStatusEl = document.getElementById('musicStatus');
 
 // Ensure proper volume defaults
 if (introAudio) introAudio.volume = 1.0;
@@ -665,27 +664,27 @@ restartBtn.addEventListener('click', (e) => {
   startGame();
 });
 
-// Auto-play intro audio on load or opening screen gesture
+// Auto-play intro audio immediately when opened
 function playOpeningAudio() {
   initAudio();
   if (!soundEnabled || !introAudio || currentState !== STATES.START) return;
-
-  introAudio.play().then(() => {
-    if (musicStatusEl) musicStatusEl.textContent = '🎶 Playing: Sampradayini...';
-  }).catch(() => {
-    if (musicStatusEl) musicStatusEl.textContent = '🎵 Tap anywhere to listen!';
-  });
+  introAudio.play().catch(() => {});
 }
 
-// Try auto-play on initial load
+// Play immediately on execution, DOMContentLoaded, and window load
+playOpeningAudio();
+window.addEventListener('DOMContentLoaded', playOpeningAudio);
 window.addEventListener('load', playOpeningAudio);
 
-// When user taps on opening screen (outside the start button), play opening song
-startScreen.addEventListener('pointerdown', (e) => {
-  if (e.target !== startBtn && !startBtn.contains(e.target)) {
+// Silent unlock on any touch/click without showing any text
+const silentUnlock = () => {
+  if (soundEnabled && introAudio && introAudio.paused && currentState === STATES.START) {
     playOpeningAudio();
   }
-});
+};
+window.addEventListener('pointerdown', silentUnlock, { passive: true });
+window.addEventListener('touchstart', silentUnlock, { passive: true });
+window.addEventListener('keydown', silentUnlock, { passive: true });
 
 // START GAME: Starts gameplay immediately and stops opening song
 startBtn.addEventListener('click', (e) => {
