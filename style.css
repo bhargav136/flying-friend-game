@@ -227,12 +227,12 @@ body {
 
 .fail-image-box {
   position: relative;
-  width: 140px;
-  height: 140px;
-  border-radius: 18px;
+  width: 155px;
+  height: 155px;
+  border-radius: 20px;
   overflow: hidden;
   border: 4px solid #ff4757;
-  box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+  box-shadow: 0 0 22px rgba(255, 71, 87, 0.65);
   background: #000;
 }
 
@@ -240,7 +240,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center top;
+  object-position: center center;
 }
 
 .fail-badge {
