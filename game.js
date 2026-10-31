@@ -1,5 +1,5 @@
 /**
- * Flying Friend - Flappy Bird Style Game
+ * Flying Sai - Flappy Bird Style Game
  */
 
 const canvas = document.getElementById('gameCanvas');
@@ -24,7 +24,7 @@ const STATES = {
 
 let currentState = STATES.START;
 let score = 0;
-let highScore = parseInt(localStorage.getItem('flying_friend_highscore') || '0', 10);
+let highScore = parseInt(localStorage.getItem('flying_sai_highscore') || localStorage.getItem('flying_friend_highscore') || '0', 10);
 let frames = 0;
 let soundEnabled = true;
 
@@ -551,7 +551,7 @@ function triggerGameOver() {
 
   if (score > highScore) {
     highScore = score;
-    localStorage.setItem('flying_friend_highscore', highScore.toString());
+    localStorage.setItem('flying_sai_highscore', highScore.toString());
   }
 
   finalScoreEl.textContent = score;
