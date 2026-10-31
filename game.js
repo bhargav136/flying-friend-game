@@ -227,31 +227,36 @@ const clouds = [
   { x: 330, y: 70, scale: 0.8, speed: 0.3 }
 ];
 
-// Bird Object - Tuned for easy, pleasant flight
+// Bird Object - Tuned for easy, pleasant flight, scaling dynamically with speed
 const bird = {
   x: 80,
   y: 260,
   w: 46,
   h: 56,
   velocity: 0,
-  gravity: 0.20,        // Soft gravity so it doesn't drop too fast
-  jumpStrength: -4.8,   // Easy, controllable flap
+  baseGravity: 0.20,     // Soft, slow start
+  baseJump: -4.8,
   rotation: 0,
 
   reset() {
     this.x = 80;
     this.y = canvas.height / 2 - 30;
-    this.velocity = this.jumpStrength; // Initial upward lift so it starts flyable!
+    this.velocity = this.baseJump;
     this.rotation = -0.2;
   },
 
   flap() {
-    this.velocity = this.jumpStrength;
+    // Scales dynamically: gentle when slow, snappier when fast
+    const speedFactor = Math.min(1.0, (pillars.currentSpeed - pillars.baseSpeed) / 1.5);
+    this.velocity = this.baseJump - speedFactor * 0.9;
     playJumpSound();
   },
 
   update() {
-    this.velocity += this.gravity;
+    const speedFactor = Math.min(1.0, (pillars.currentSpeed - pillars.baseSpeed) / 1.5);
+    const activeGravity = this.baseGravity + speedFactor * 0.07;
+
+    this.velocity += activeGravity;
     this.y += this.velocity;
 
     // Smooth angle tilt
@@ -295,20 +300,21 @@ const bird = {
   }
 };
 
-// Pillars (Pipes) - Uniform generous gaps & enlarged photo caps
+// Pillars (Pipes) - Starts slow, then speeds up progressively like Flappy Bird
 const pillars = {
   items: [],
   gap: 195,              // Fixed, wide gap for easy navigation
   width: 76,             // Wider pillars for enlarged photo
-  speed: 1.6,            // Slower movement speed so game is easy to play
-  spawnInterval: 170,    // Spacious distance between pipes
+  baseSpeed: 1.5,        // Relaxed, slow start speed
+  currentSpeed: 1.5,
+  baseInterval: 170,     // Initial relaxed interval
 
   reset() {
     this.items = [];
+    this.currentSpeed = this.baseSpeed;
   },
 
   spawn() {
-    // Generate height with guaranteed identical gap size
     const minTop = 60;
     const maxTop = canvas.height - 40 - this.gap - minTop;
     const topHeight = Math.floor(Math.random() * (maxTop - minTop + 1)) + minTop;
@@ -321,14 +327,22 @@ const pillars = {
   },
 
   update() {
-    // Delay first pillar spawn to frame 160 so player gets a relaxed start
-    if (frames >= 160 && (frames - 160) % this.spawnInterval === 0) {
+    // Dynamic Speed: Starts slow, gets faster as score climbs!
+    // Score 0: 1.5 (slow and easy)
+    // Score 5: 1.8
+    // Score 10: 2.1
+    // Score 15: 2.4
+    // Score 25+: up to 3.0 (Fast arcade pace)
+    this.currentSpeed = Math.min(3.0, this.baseSpeed + score * 0.06);
+    const activeInterval = Math.max(92, Math.round(this.baseInterval * (this.baseSpeed / this.currentSpeed)));
+
+    if (frames >= 150 && (frames - 150) % activeInterval === 0) {
       this.spawn();
     }
 
     for (let i = 0; i < this.items.length; i++) {
       const p = this.items[i];
-      p.x -= this.speed;
+      p.x -= this.currentSpeed;
 
       // Score
       if (!p.passed && p.x + this.width < bird.x) {
@@ -602,7 +616,7 @@ function loop() {
   frames++;
 
   if (currentState === STATES.PLAYING) {
-    bgScroll += 1.0;
+    bgScroll += pillars.currentSpeed * 0.65;
     bird.update();
     pillars.update();
 
