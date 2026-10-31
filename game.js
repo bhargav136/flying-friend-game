@@ -664,27 +664,33 @@ restartBtn.addEventListener('click', (e) => {
   startGame();
 });
 
-// Auto-play intro audio immediately when opened
+// Auto-play intro audio immediately when opened without requiring user clicks
 function playOpeningAudio() {
   initAudio();
   if (!soundEnabled || !introAudio || currentState !== STATES.START) return;
+  introAudio.volume = 1.0;
   introAudio.play().catch(() => {});
 }
 
-// Play immediately on execution, DOMContentLoaded, and window load
+// Trigger instantly
 playOpeningAudio();
-window.addEventListener('DOMContentLoaded', playOpeningAudio);
+document.addEventListener('readystatechange', () => {
+  if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    playOpeningAudio();
+  }
+});
 window.addEventListener('load', playOpeningAudio);
 
-// Silent unlock on any touch/click without showing any text
-const silentUnlock = () => {
+// Any silent interaction also ensures it plays if browser had held it suspended
+const silentStart = () => {
   if (soundEnabled && introAudio && introAudio.paused && currentState === STATES.START) {
     playOpeningAudio();
   }
 };
-window.addEventListener('pointerdown', silentUnlock, { passive: true });
-window.addEventListener('touchstart', silentUnlock, { passive: true });
-window.addEventListener('keydown', silentUnlock, { passive: true });
+window.addEventListener('pointermove', silentStart, { once: true, passive: true });
+window.addEventListener('scroll', silentStart, { once: true, passive: true });
+window.addEventListener('touchstart', silentStart, { once: true, passive: true });
+window.addEventListener('pointerdown', silentStart, { once: true, passive: true });
 
 // START GAME: Starts gameplay immediately and stops opening song
 startBtn.addEventListener('click', (e) => {
