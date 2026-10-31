@@ -28,7 +28,7 @@ let highScore = parseInt(localStorage.getItem('flying_friend_highscore') || '0',
 let frames = 0;
 let soundEnabled = true;
 
-// Web Audio API for snappy jump & hit effects
+// Web Audio API for jump & hit effects
 let audioCtx = null;
 function initAudio() {
   if (!audioCtx) {
@@ -39,33 +39,15 @@ function initAudio() {
   }
 }
 
-function playTone(freq, type, duration, gainVal = 0.15) {
-  if (!soundEnabled || !audioCtx) return;
-  try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-  } catch (e) {
-    // Audio context may require interaction
-  }
-}
-
 function playJumpSound() {
   if (!soundEnabled || !audioCtx) return;
   try {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(320, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(640, audioCtx.currentTime + 0.12);
-    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(340, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(680, audioCtx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
@@ -80,19 +62,31 @@ function playScoreSound() {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(784, audioCtx.currentTime);
-    osc.frequency.setValueAtTime(1046, audioCtx.currentTime + 0.08);
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.08);
     gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.25);
+    osc.stop(audioCtx.currentTime + 0.22);
   } catch (e) {}
 }
 
 function playHitSound() {
-  playTone(150, 'sawtooth', 0.28, 0.3);
+  if (!soundEnabled || !audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+  } catch (e) {}
 }
 
 // Sound toggle handler
@@ -107,14 +101,14 @@ soundToggle.addEventListener('click', (e) => {
   }
 });
 
-// Load and process images
-const bgImg = new Image();
-bgImg.src = 'assets/bg.png';
+// Load images
+const pillarImg = new Image();
+pillarImg.src = 'assets/bg.png'; // Mascot image used on pillars
 
 let processedBirdImg = null;
 let birdImageLoaded = false;
 
-// Remove solid black background from bird image dynamically using perimeter flood fill
+// Remove solid black background from bird image dynamically
 function prepareBirdSprite() {
   const rawImg = new Image();
   rawImg.crossOrigin = 'anonymous';
@@ -132,16 +126,13 @@ function prepareBirdSprite() {
       const w = off.width;
       const h = off.height;
 
-      // Flood fill background from edges
       const visited = new Uint8Array(w * h);
       const queue = [];
 
       function isBlack(idx) {
-        // Background is solid black or very dark JPEG noise
         return data[idx] < 38 && data[idx + 1] < 38 && data[idx + 2] < 38;
       }
 
-      // Seed top and bottom edges
       for (let x = 0; x < w; x++) {
         const topIdx = (0 * w + x) * 4;
         if (isBlack(topIdx)) {
@@ -155,7 +146,6 @@ function prepareBirdSprite() {
         }
       }
 
-      // Seed left and right edges
       for (let y = 0; y < h; y++) {
         const leftIdx = (y * w + 0) * 4;
         if (isBlack(leftIdx)) {
@@ -174,8 +164,6 @@ function prepareBirdSprite() {
         const cx = queue[head++];
         const cy = queue[head++];
         const pIdx = (cy * w + cx) * 4;
-
-        // Transparent
         data[pIdx + 3] = 0;
 
         const neighbors = [
@@ -211,8 +199,7 @@ function prepareBirdSprite() {
         if (avatarEl) avatarEl.src = processedBirdImg.src;
       };
     } catch (err) {
-      // Fallback: use raw image directly if canvas tainted
-      console.warn('Canvas processing fallback active:', err);
+      console.warn('Canvas fallback active:', err);
       processedBirdImg = rawImg;
       birdImageLoaded = true;
     }
@@ -220,22 +207,29 @@ function prepareBirdSprite() {
 }
 prepareBirdSprite();
 
-// Bird Object
+// Cloud generation for clean sky background
+const clouds = [
+  { x: 40, y: 55, scale: 0.9, speed: 0.35 },
+  { x: 190, y: 110, scale: 1.2, speed: 0.45 },
+  { x: 330, y: 70, scale: 0.8, speed: 0.3 }
+];
+
+// Bird Object - Tuned for easy, pleasant flight
 const bird = {
-  x: 75,
-  y: 250,
-  w: 48,
-  h: 58,
+  x: 80,
+  y: 260,
+  w: 46,
+  h: 56,
   velocity: 0,
-  gravity: 0.28,
-  jumpStrength: -6.2,
+  gravity: 0.20,        // Soft gravity so it doesn't drop too fast
+  jumpStrength: -4.8,   // Easy, controllable flap
   rotation: 0,
 
   reset() {
-    this.x = 75;
-    this.y = canvas.height / 2 - 25;
-    this.velocity = 0;
-    this.rotation = 0;
+    this.x = 80;
+    this.y = canvas.height / 2 - 30;
+    this.velocity = this.jumpStrength; // Initial upward lift so it starts flyable!
+    this.rotation = -0.2;
   },
 
   flap() {
@@ -247,11 +241,11 @@ const bird = {
     this.velocity += this.gravity;
     this.y += this.velocity;
 
-    // Smooth rotation based on velocity
+    // Smooth angle tilt
     if (this.velocity < 0) {
-      this.rotation = Math.max(-0.45, (this.velocity / 10) * 0.7);
+      this.rotation = Math.max(-0.35, (this.velocity / 8) * 0.5);
     } else {
-      this.rotation = Math.min(Math.PI / 2.5, (this.velocity / 12) * 0.9);
+      this.rotation = Math.min(Math.PI / 3, (this.velocity / 10) * 0.7);
     }
 
     // Floor collision
@@ -273,14 +267,11 @@ const bird = {
     ctx.rotate(this.rotation);
 
     if (birdImageLoaded && processedBirdImg) {
-      // Draw shadow
-      ctx.shadowColor = 'rgba(0,0,0,0.35)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetY = 6;
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 4;
       ctx.drawImage(processedBirdImg, -this.w / 2, -this.h / 2, this.w, this.h);
-      ctx.shadowColor = 'transparent';
     } else {
-      // Fallback placeholder while loading
       ctx.fillStyle = '#ffbe1a';
       ctx.beginPath();
       ctx.arc(0, 0, 22, 0, Math.PI * 2);
@@ -291,19 +282,20 @@ const bird = {
   }
 };
 
-// Pillars (Pipes)
+// Pillars (Pipes) - Uniform generous gaps & enlarged photo caps
 const pillars = {
   items: [],
-  gap: 155,
-  width: 64,
-  speed: 2.2,
-  spawnInterval: 120, // frames
+  gap: 195,              // Fixed, wide gap for easy navigation
+  width: 76,             // Wider pillars for enlarged photo
+  speed: 1.6,            // Slower movement speed so game is easy to play
+  spawnInterval: 170,    // Spacious distance between pipes
 
   reset() {
     this.items = [];
   },
 
   spawn() {
+    // Generate height with guaranteed identical gap size
     const minTop = 60;
     const maxTop = canvas.height - 40 - this.gap - minTop;
     const topHeight = Math.floor(Math.random() * (maxTop - minTop + 1)) + minTop;
@@ -316,7 +308,8 @@ const pillars = {
   },
 
   update() {
-    if (frames % this.spawnInterval === 0) {
+    // Delay first pillar spawn to frame 160 so player gets a relaxed start
+    if (frames >= 160 && (frames - 160) % this.spawnInterval === 0) {
       this.spawn();
     }
 
@@ -324,15 +317,21 @@ const pillars = {
       const p = this.items[i];
       p.x -= this.speed;
 
-      // Score counter
+      // Score
       if (!p.passed && p.x + this.width < bird.x) {
         p.passed = true;
         score++;
         playScoreSound();
+
+        // Music slowly rises in volume as score increases
+        if (soundEnabled && bgm) {
+          const targetVol = Math.min(1.0, 0.25 + score * 0.06);
+          bgm.volume = targetVol;
+        }
       }
 
-      // Collision detection with bird (circle/hitbox approximation)
-      const birdRadius = bird.w * 0.38;
+      // Forgiving hitbox (inner 30% radius of bird)
+      const birdRadius = bird.w * 0.30;
       const birdLeft = bird.x - birdRadius;
       const birdRight = bird.x + birdRadius;
       const birdTop = bird.y - birdRadius;
@@ -342,7 +341,6 @@ const pillars = {
       const pRight = p.x + this.width;
 
       if (birdRight > pLeft && birdLeft < pRight) {
-        // Hit top pipe or bottom pipe
         if (birdTop < p.topHeight || birdBottom > p.bottomY) {
           triggerGameOver();
           return;
@@ -350,8 +348,7 @@ const pillars = {
       }
     }
 
-    // Remove offscreen pillars
-    if (this.items.length && this.items[0].x < -this.width - 20) {
+    if (this.items.length && this.items[0].x < -this.width - 30) {
       this.items.shift();
     }
   },
@@ -359,93 +356,112 @@ const pillars = {
   draw() {
     for (let i = 0; i < this.items.length; i++) {
       const p = this.items[i];
+      const capH = 68; // Enlarged cap to host enlarged photo
 
-      // Top pipe gradient
+      // Top pipe body
       const gradTop = ctx.createLinearGradient(p.x, 0, p.x + this.width, 0);
-      gradTop.addColorStop(0, '#5ee65e');
-      gradTop.addColorStop(0.3, '#73f573');
-      gradTop.addColorStop(0.7, '#2cb02c');
-      gradTop.addColorStop(1, '#1b781b');
+      gradTop.addColorStop(0, '#58d358');
+      gradTop.addColorStop(0.3, '#75f575');
+      gradTop.addColorStop(0.7, '#249c24');
+      gradTop.addColorStop(1, '#166e16');
 
       ctx.fillStyle = gradTop;
       ctx.fillRect(p.x, 0, this.width, p.topHeight);
       ctx.lineWidth = 3;
-      ctx.strokeStyle = '#0d480d';
+      ctx.strokeStyle = '#0e460e';
       ctx.strokeRect(p.x, 0, this.width, p.topHeight);
 
-      // Top pipe rim/cap
-      const capHeight = 24;
-      const capExtra = 4;
-      ctx.fillRect(p.x - capExtra, p.topHeight - capHeight, this.width + capExtra * 2, capHeight);
-      ctx.strokeRect(p.x - capExtra, p.topHeight - capHeight, this.width + capExtra * 2, capHeight);
+      // Top pipe enlarged cap
+      const capExtra = 5;
+      ctx.fillRect(p.x - capExtra, p.topHeight - capH, this.width + capExtra * 2, capH);
+      ctx.strokeRect(p.x - capExtra, p.topHeight - capH, this.width + capExtra * 2, capH);
 
-      // Bottom pipe
-      const btmHeight = canvas.height - 40 - p.bottomY;
-      ctx.fillRect(p.x, p.bottomY, this.width, btmHeight);
-      ctx.strokeRect(p.x, p.bottomY, this.width, btmHeight);
+      // Bottom pipe body
+      const btmH = canvas.height - 40 - p.bottomY;
+      ctx.fillRect(p.x, p.bottomY, this.width, btmH);
+      ctx.strokeRect(p.x, p.bottomY, this.width, btmH);
 
-      // Bottom pipe rim/cap
-      ctx.fillRect(p.x - capExtra, p.bottomY, this.width + capExtra * 2, capHeight);
-      ctx.strokeRect(p.x - capExtra, p.bottomY, this.width + capExtra * 2, capHeight);
+      // Bottom pipe enlarged cap
+      ctx.fillRect(p.x - capExtra, p.bottomY, this.width + capExtra * 2, capH);
+      ctx.strokeRect(p.x - capExtra, p.bottomY, this.width + capExtra * 2, capH);
 
-      // Stamp 2nd image (mascot logo) onto the pillar caps
-      if (bgImg.complete && bgImg.naturalWidth > 0) {
-        const badgeSize = 28;
-        // Top badge
-        ctx.drawImage(
-          bgImg,
-          p.x + (this.width - badgeSize) / 2,
-          p.topHeight - capHeight + (capHeight - badgeSize) / 2,
-          badgeSize,
-          badgeSize
-        );
-        // Bottom badge
-        ctx.drawImage(
-          bgImg,
-          p.x + (this.width - badgeSize) / 2,
-          p.bottomY + (capHeight - badgeSize) / 2,
-          badgeSize,
-          badgeSize
-        );
+      // ENLARGED PHOTO ON THE PILLAR CAPS
+      if (pillarImg.complete && pillarImg.naturalWidth > 0) {
+        const photoSize = 60; // Big, enlarged photo badge
+
+        // Top cap photo
+        const topPhotoX = p.x + (this.width - photoSize) / 2;
+        const topPhotoY = p.topHeight - capH + (capH - photoSize) / 2;
+        drawPillarBadge(topPhotoX, topPhotoY, photoSize);
+
+        // Bottom cap photo
+        const btmPhotoX = p.x + (this.width - photoSize) / 2;
+        const btmPhotoY = p.bottomY + (capH - photoSize) / 2;
+        drawPillarBadge(btmPhotoX, btmPhotoY, photoSize);
       }
     }
   }
 };
 
-// Background parallax & styling
+// Draw enlarged photo badge with circular badge border
+function drawPillarBadge(x, y, size) {
+  ctx.save();
+  // Badge background circle
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(x + size / 2, y + size / 2, size / 2 + 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#0e460e';
+  ctx.stroke();
+
+  // Clip photo in circle
+  ctx.beginPath();
+  ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.drawImage(pillarImg, x, y, size, size);
+  ctx.restore();
+}
+
+// Background - Clean sky, clouds, rolling green hills (NO HAMSTERS)
 let bgScroll = 0;
 function drawBackground() {
-  // Sky gradient
+  // Vibrant sky gradient
   const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  skyGrad.addColorStop(0, '#4fc3f7');
-  skyGrad.addColorStop(0.65, '#b3e5fc');
-  skyGrad.addColorStop(1, '#e1f5fe');
+  skyGrad.addColorStop(0, '#38bdf8');
+  skyGrad.addColorStop(0.65, '#93c5fd');
+  skyGrad.addColorStop(1, '#e0f2fe');
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Floating background motifs using Image 2
-  if (bgImg.complete && bgImg.naturalWidth > 0) {
-    ctx.save();
-    ctx.globalAlpha = 0.22;
-    const bgTileW = 90;
-    const bgTileH = 90;
-    const offset = (bgScroll * 0.4) % (bgTileW + 40);
-
-    for (let bx = -offset; bx < canvas.width + bgTileW; bx += bgTileW + 40) {
-      ctx.drawImage(bgImg, bx, 120, bgTileW, bgTileH);
-      ctx.drawImage(bgImg, bx + 60, 260, bgTileW * 0.8, bgTileH * 0.8);
+  // Soft cartoon clouds
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+  for (let c of clouds) {
+    if (currentState === STATES.PLAYING) {
+      c.x -= c.speed;
+      if (c.x < -100) c.x = canvas.width + 50;
     }
-    ctx.restore();
+    drawCloud(c.x, c.y, c.scale);
   }
 
-  // City / Hill Silhouettes in background
-  ctx.fillStyle = '#90caf9';
+  // Distant rolling hills
+  ctx.fillStyle = '#86efac';
   ctx.beginPath();
   ctx.moveTo(0, canvas.height - 40);
-  ctx.lineTo(0, 430);
-  ctx.quadraticCurveTo(80, 400, 160, 440);
-  ctx.quadraticCurveTo(240, 480, 320, 420);
-  ctx.quadraticCurveTo(380, 390, canvas.width, 430);
+  ctx.lineTo(0, 440);
+  ctx.quadraticCurveTo(100, 410, 200, 445);
+  ctx.quadraticCurveTo(300, 475, canvas.width, 435);
+  ctx.lineTo(canvas.width, canvas.height - 40);
+  ctx.closePath();
+  ctx.fill();
+
+  // Near lush green hills
+  ctx.fillStyle = '#4ade80';
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height - 40);
+  ctx.lineTo(0, 470);
+  ctx.quadraticCurveTo(120, 440, 240, 475);
+  ctx.quadraticCurveTo(340, 495, canvas.width, 460);
   ctx.lineTo(canvas.width, canvas.height - 40);
   ctx.closePath();
   ctx.fill();
@@ -454,20 +470,19 @@ function drawBackground() {
   const groundHeight = 40;
   const groundY = canvas.height - groundHeight;
 
-  // Ground base
   ctx.fillStyle = '#ded895';
   ctx.fillRect(0, groundY, canvas.width, groundHeight);
 
-  // Grass top border
-  ctx.fillStyle = '#73bf2e';
+  // Grass strip
+  ctx.fillStyle = '#65a30d';
   ctx.fillRect(0, groundY, canvas.width, 10);
-  ctx.fillStyle = '#5c9e24';
+  ctx.fillStyle = '#4d7c0f';
   ctx.fillRect(0, groundY + 10, canvas.width, 3);
 
-  // Ground stripes
+  // Ground angled stripes
   ctx.strokeStyle = '#cbb868';
   ctx.lineWidth = 2;
-  const stripeOffset = (bgScroll * 2) % 24;
+  const stripeOffset = (bgScroll * 1.6) % 24;
   for (let sx = -stripeOffset; sx < canvas.width + 24; sx += 24) {
     ctx.beginPath();
     ctx.moveTo(sx, groundY + 13);
@@ -476,24 +491,34 @@ function drawBackground() {
   }
 }
 
-// In-game score display
+function drawCloud(cx, cy, scale) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 22 * scale, 0, Math.PI * 2);
+  ctx.arc(cx + 20 * scale, cy - 10 * scale, 26 * scale, 0, Math.PI * 2);
+  ctx.arc(cx + 46 * scale, cy, 20 * scale, 0, Math.PI * 2);
+  ctx.arc(cx + 25 * scale, cy + 12 * scale, 18 * scale, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// In-game score
 function drawScore() {
   if (currentState !== STATES.PLAYING) return;
   ctx.save();
   ctx.font = '36px "Press Start 2P", monospace';
   ctx.textAlign = 'center';
 
-  // Shadow / Outline
   ctx.fillStyle = '#000';
   ctx.fillText(score, canvas.width / 2 + 3, 73);
 
-  // Main Text
   ctx.fillStyle = '#ffffff';
   ctx.fillText(score, canvas.width / 2, 70);
   ctx.restore();
 }
 
-// Game State Transitions
+// Start Game
 function startGame() {
   initAudio();
   currentState = STATES.PLAYING;
@@ -505,15 +530,23 @@ function startGame() {
   startScreen.classList.remove('active');
   gameOverScreen.classList.remove('active');
 
-  if (soundEnabled) {
+  if (soundEnabled && bgm) {
+    bgm.volume = 0.25; // Song starts low and rises slowly while playing
     bgm.currentTime = 0;
     bgm.play().catch(() => {});
   }
 }
 
+// Trigger Game Over - SONG STOPS IMMEDIATELY
 function triggerGameOver() {
   if (currentState === STATES.GAMEOVER) return;
   currentState = STATES.GAMEOVER;
+
+  // STOP SONG IMMEDIATELY WHEN LOST
+  if (bgm) {
+    bgm.pause();
+  }
+
   playHitSound();
 
   if (score > highScore) {
@@ -524,26 +557,29 @@ function triggerGameOver() {
   finalScoreEl.textContent = score;
   bestScoreEl.textContent = highScore;
 
-  // Show Game Over Screen
   setTimeout(() => {
     gameOverScreen.classList.add('active');
-  }, 250);
+  }, 220);
 }
 
-// Main game loop
+// Game loop
 function loop() {
   frames++;
 
   if (currentState === STATES.PLAYING) {
-    bgScroll += 1.2;
+    bgScroll += 1.0;
     bird.update();
     pillars.update();
+
+    // Song slowly rises in volume over time as well
+    if (soundEnabled && bgm && bgm.volume < 1.0) {
+      bgm.volume = Math.min(1.0, bgm.volume + 0.00015);
+    }
   } else if (currentState === STATES.START) {
-    // Gentle bobbing animation for bird on start screen
-    bird.y = canvas.height / 2 + Math.sin(frames * 0.08) * 8;
+    // Gentle bobbing before starting
+    bird.y = canvas.height / 2 - 20 + Math.sin(frames * 0.06) * 6;
   }
 
-  // Draw everything
   drawBackground();
   pillars.draw();
   bird.draw();
@@ -561,13 +597,11 @@ function handleAction() {
   }
 }
 
-// Touch and click on canvas
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   handleAction();
 });
 
-// Keyboard controls (Space / Arrow Up)
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.key === ' ' || e.code === 'ArrowUp') {
     e.preventDefault();
@@ -585,5 +619,4 @@ restartBtn.addEventListener('click', (e) => {
   startGame();
 });
 
-// Run loop
 loop();
