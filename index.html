@@ -18,9 +18,23 @@
     <canvas id="gameCanvas" width="400" height="600"></canvas>
 
     <!-- Audio elements -->
-    <audio id="introAudio" src="assets/intro.mp3" autoplay loop preload="auto"></audio>
-    <audio id="bgm" src="assets/bgm.mp3" loop preload="auto"></audio>
-    <audio id="gameOverAudio" src="assets/gameover.mp3" preload="auto"></audio>
+    <audio id="introAudio" src="assets/intro.mp3" autoplay playsinline preload="auto"></audio>
+    <audio id="bgm" src="assets/bgm.mp3" loop playsinline preload="auto"></audio>
+    <audio id="gameOverAudio" src="assets/gameover.mp3" playsinline preload="auto"></audio>
+    <script>
+      (function() {
+        var audio = document.getElementById('introAudio');
+        if (audio) {
+          audio.volume = 1.0;
+          var promise = audio.play();
+          if (promise !== undefined) {
+            promise.catch(function(err) {
+              console.log('Immediate autoplay attempted:', err);
+            });
+          }
+        }
+      })();
+    </script>
 
     <!-- Audio Toggle Button -->
     <button id="soundToggle" class="icon-btn" aria-label="Toggle sound">
