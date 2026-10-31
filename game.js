@@ -16,6 +16,12 @@ const bgm = document.getElementById('bgm');
 const gameOverAudio = document.getElementById('gameOverAudio');
 const finalScoreEl = document.getElementById('finalScore');
 const bestScoreEl = document.getElementById('bestScore');
+const musicStatusEl = document.getElementById('musicStatus');
+
+// Ensure proper volume defaults
+if (introAudio) introAudio.volume = 1.0;
+if (bgm) bgm.volume = 0.4;
+if (gameOverAudio) gameOverAudio.volume = 1.0;
 
 // Game state constants
 const STATES = {
@@ -538,30 +544,40 @@ function startGame() {
   startScreen.classList.remove('active');
   gameOverScreen.classList.remove('active');
 
-  // Stop intro audio when playing
-  if (introAudio) {
-    introAudio.pause();
-    introAudio.currentTime = 0;
-  }
-
   if (gameOverAudio) {
     gameOverAudio.pause();
     gameOverAudio.currentTime = 0;
   }
 
-  if (soundEnabled && bgm) {
-    bgm.volume = 0.25; // Song starts low and rises slowly while playing
-    bgm.currentTime = 0;
-    bgm.play().catch(() => {});
+  // Handle music transition:
+  // If intro audio is currently playing, let it continue playing!
+  // Once intro finishes, automatically transition to background music.
+  if (soundEnabled) {
+    if (introAudio && !introAudio.paused && !introAudio.ended) {
+      introAudio.onended = () => {
+        if (currentState === STATES.PLAYING && soundEnabled && bgm) {
+          bgm.currentTime = 0;
+          bgm.volume = 0.5;
+          bgm.play().catch(() => {});
+        }
+      };
+    } else if (bgm) {
+      bgm.currentTime = 0;
+      bgm.volume = 0.4;
+      bgm.play().catch(() => {});
+    }
   }
 }
 
-// Trigger Game Over - SONG STOPS IMMEDIATELY & GAME OVER AUDIO PLAYS
+// Trigger Game Over - ALL MUSIC STOPS & GAME OVER AUDIO PLAYS
 function triggerGameOver() {
   if (currentState === STATES.GAMEOVER) return;
   currentState = STATES.GAMEOVER;
 
-  // STOP BACKGROUND MUSIC IMMEDIATELY
+  // STOP ALL MUSIC IMMEDIATELY
+  if (introAudio) {
+    introAudio.pause();
+  }
   if (bgm) {
     bgm.pause();
   }
@@ -644,17 +660,43 @@ restartBtn.addEventListener('click', (e) => {
   startGame();
 });
 
-// Auto-play intro audio on load or first user gesture
-function tryPlayIntro() {
-  if (soundEnabled && introAudio && currentState === STATES.START) {
-    introAudio.play().catch(() => {});
+// Audio gesture unlocking & playback
+let audioUnlocked = false;
+function playOpeningAudio() {
+  initAudio();
+  if (!soundEnabled || !introAudio) return;
+
+  introAudio.play().then(() => {
+    audioUnlocked = true;
+    if (musicStatusEl) musicStatusEl.textContent = '🎶 Playing: Sampradayini...';
+  }).catch((err) => {
+    // Autoplay blocked until gesture
+    if (musicStatusEl) musicStatusEl.textContent = '🎵 Tap anywhere to start music!';
+  });
+}
+
+// Try auto-play on load
+window.addEventListener('load', playOpeningAudio);
+
+// Force start on ANY first gesture on page
+function onFirstGesture() {
+  if (!audioUnlocked && soundEnabled && introAudio && introAudio.paused) {
+    playOpeningAudio();
   }
 }
-window.addEventListener('load', tryPlayIntro);
-document.addEventListener('pointerdown', () => {
-  if (currentState === STATES.START) {
-    tryPlayIntro();
-  }
-}, { once: true });
+window.addEventListener('pointerdown', onFirstGesture, { passive: true });
+window.addEventListener('touchstart', onFirstGesture, { passive: true });
+window.addEventListener('keydown', onFirstGesture, { passive: true });
+
+startBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playOpeningAudio();
+  startGame();
+});
+
+restartBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  startGame();
+});
 
 loop();
