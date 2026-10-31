@@ -300,14 +300,14 @@ const bird = {
   }
 };
 
-// Pillars (Pipes) - Starts slow, then speeds up progressively like Flappy Bird
+// Pillars (Pipes) - Guaranteed EXACT equal distances & gaps
 const pillars = {
   items: [],
-  gap: 195,              // Fixed, wide gap for easy navigation
-  width: 76,             // Wider pillars for enlarged photo
-  baseSpeed: 1.5,        // Relaxed, slow start speed
+  verticalGap: 195,          // EXACT identical vertical opening between top & bottom pipes
+  horizontalDistance: 240,   // EXACT identical horizontal distance between consecutive poles
+  width: 76,                 // Wider pillars for enlarged photo
+  baseSpeed: 1.5,            // Relaxed, slow start speed
   currentSpeed: 1.5,
-  baseInterval: 170,     // Initial relaxed interval
 
   reset() {
     this.items = [];
@@ -315,29 +315,34 @@ const pillars = {
   },
 
   spawn() {
+    // Generate height with guaranteed exact identical vertical gap
     const minTop = 60;
-    const maxTop = canvas.height - 40 - this.gap - minTop;
+    const maxTop = canvas.height - 40 - this.verticalGap - minTop;
     const topHeight = Math.floor(Math.random() * (maxTop - minTop + 1)) + minTop;
     this.items.push({
       x: canvas.width,
       topHeight: topHeight,
-      bottomY: topHeight + this.gap,
+      bottomY: topHeight + this.verticalGap,
       passed: false
     });
   },
 
   update() {
-    // Dynamic Speed: Starts slow, gets faster as score climbs!
-    // Score 0: 1.5 (slow and easy)
-    // Score 5: 1.8
-    // Score 10: 2.1
-    // Score 15: 2.4
-    // Score 25+: up to 3.0 (Fast arcade pace)
+    // Progressive Speed Scaling
     this.currentSpeed = Math.min(3.0, this.baseSpeed + score * 0.06);
-    const activeInterval = Math.max(92, Math.round(this.baseInterval * (this.baseSpeed / this.currentSpeed)));
 
-    if (frames >= 150 && (frames - 150) % activeInterval === 0) {
-      this.spawn();
+    // GUARANTEED EXACT EQUAL DISTANCE BETWEEN ALL POLES:
+    // First pole spawns after initial runway
+    if (this.items.length === 0) {
+      if (frames >= 140) {
+        this.spawn();
+      }
+    } else {
+      const lastPillar = this.items[this.items.length - 1];
+      // Next pillar spawns when last pillar has moved exactly horizontalDistance pixels!
+      if (canvas.width - lastPillar.x >= this.horizontalDistance) {
+        this.spawn();
+      }
     }
 
     for (let i = 0; i < this.items.length; i++) {
