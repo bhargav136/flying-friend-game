@@ -3,7 +3,7 @@
 A Flappy Bird style browser game recreation featuring custom player avatar, background theme, obstacles, and meme sound effects.
 
 ## 🎮 Play Live
-**[https://flying-friend-game.vercel.app](https://flying-friend-game.vercel.app)**
+**[https://flying-sai.vercel.app](https://flying-sai.vercel.app)**
 
 ## 🌟 Features
 - **Custom Player (Bird)**: Person cutout with background removed.
