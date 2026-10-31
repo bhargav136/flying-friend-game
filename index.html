@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Flying Friend - The Flappy Game</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="game-wrapper">
+    <!-- Canvas container -->
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+    <!-- Audio element for background music -->
+    <audio id="bgm" src="assets/bgm.mp3" loop preload="auto"></audio>
+
+    <!-- Audio Toggle Button -->
+    <button id="soundToggle" class="icon-btn" aria-label="Toggle sound">
+      <span id="soundIcon">🔊</span>
+    </button>
+
+    <!-- Start Overlay Screen -->
+    <div id="startScreen" class="overlay-screen active">
+      <div class="overlay-card">
+        <h1 class="game-title">FLYING FRIEND</h1>
+        <div class="preview-avatar">
+          <div class="glow-ring">
+            <img id="avatarPreview" src="assets/bird_raw.jpg" alt="Player Bird" />
+          </div>
+        </div>
+        <p class="instruction">Tap / Click or Press <b>[SPACE]</b> to Fly!</p>
+        <button id="startBtn" class="action-btn">TAP TO PLAY</button>
+        <p class="tagline">🎵 Turn on sound for the full experience!</p>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="overlay-screen">
+      <div class="overlay-card game-over-card">
+        <h2 class="game-over-title">GAME OVER!</h2>
+        
+        <div class="fail-image-box">
+          <img src="assets/gameover.jpg" alt="Game Over Friend" class="fail-image" />
+          <div class="fail-badge">AREYYY! 😭</div>
+        </div>
+
+        <div class="score-board">
+          <div class="score-row">
+            <span>SCORE</span>
+            <span id="finalScore" class="val">0</span>
+          </div>
+          <div class="score-row">
+            <span>BEST SCORE</span>
+            <span id="bestScore" class="val">0</span>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button id="restartBtn" class="action-btn restart">PLAY AGAIN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
