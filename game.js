@@ -11,6 +11,7 @@ const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 const soundToggle = document.getElementById('soundToggle');
 const soundIcon = document.getElementById('soundIcon');
+const introAudio = document.getElementById('introAudio');
 const bgm = document.getElementById('bgm');
 const gameOverAudio = document.getElementById('gameOverAudio');
 const finalScoreEl = document.getElementById('finalScore');
@@ -96,10 +97,15 @@ soundToggle.addEventListener('click', (e) => {
   soundEnabled = !soundEnabled;
   soundIcon.textContent = soundEnabled ? '🔊' : '🔇';
   if (!soundEnabled) {
+    if (introAudio) introAudio.pause();
     if (bgm) bgm.pause();
     if (gameOverAudio) gameOverAudio.pause();
-  } else if (currentState === STATES.PLAYING) {
-    bgm.play().catch(() => {});
+  } else {
+    if (currentState === STATES.START && introAudio) {
+      introAudio.play().catch(() => {});
+    } else if (currentState === STATES.PLAYING && bgm) {
+      bgm.play().catch(() => {});
+    }
   }
 });
 
@@ -532,6 +538,12 @@ function startGame() {
   startScreen.classList.remove('active');
   gameOverScreen.classList.remove('active');
 
+  // Stop intro audio when playing
+  if (introAudio) {
+    introAudio.pause();
+    introAudio.currentTime = 0;
+  }
+
   if (gameOverAudio) {
     gameOverAudio.pause();
     gameOverAudio.currentTime = 0;
@@ -631,5 +643,18 @@ restartBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   startGame();
 });
+
+// Auto-play intro audio on load or first user gesture
+function tryPlayIntro() {
+  if (soundEnabled && introAudio && currentState === STATES.START) {
+    introAudio.play().catch(() => {});
+  }
+}
+window.addEventListener('load', tryPlayIntro);
+document.addEventListener('pointerdown', () => {
+  if (currentState === STATES.START) {
+    tryPlayIntro();
+  }
+}, { once: true });
 
 loop();
