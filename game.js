@@ -626,7 +626,9 @@ function loop() {
 // Input Handlers - Optimized for zero-latency mobile touch & desktop keys
 function handleAction() {
   if (currentState === STATES.START) {
-    startGame();
+    // On the start screen, ensure opening song is playing;
+    // Gameplay begins specifically by tapping "START FLYING" or pressing Space!
+    playOpeningAudio();
   } else if (currentState === STATES.PLAYING) {
     bird.flap();
   }
@@ -646,53 +648,50 @@ canvas.addEventListener('pointerdown', (e) => {
   }
 });
 
-// Keyboard controls
+// Keyboard controls: Space starts game if on start screen, or flaps bird
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.key === ' ' || e.code === 'ArrowUp') {
     e.preventDefault();
-    handleAction();
+    if (currentState === STATES.START) {
+      startGame();
+    } else if (currentState === STATES.PLAYING) {
+      bird.flap();
+    }
   }
 });
 
-startBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  startGame();
-});
-
-restartBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  startGame();
-});
-
-// Auto-play intro audio immediately when opened without requiring user clicks
+// Auto-play intro audio immediately when opened
 function playOpeningAudio() {
   initAudio();
   if (!soundEnabled || !introAudio || currentState !== STATES.START) return;
   introAudio.volume = 1.0;
-  introAudio.play().catch(() => {});
+  if (introAudio.paused) {
+    introAudio.play().catch(() => {});
+  }
 }
 
-// Trigger instantly
+// Trigger playback immediately across all lifecycle stages
 playOpeningAudio();
-document.addEventListener('readystatechange', () => {
-  if (document.readyState === 'interactive' || document.readyState === 'complete') {
-    playOpeningAudio();
-  }
-});
+document.addEventListener('DOMContentLoaded', playOpeningAudio);
 window.addEventListener('load', playOpeningAudio);
 
-// Any silent interaction also ensures it plays if browser had held it suspended
-const silentStart = () => {
+// Any touch, move or scroll anywhere on the screen also ensures it plays immediately
+const wakeAudio = () => {
   if (soundEnabled && introAudio && introAudio.paused && currentState === STATES.START) {
     playOpeningAudio();
   }
 };
-window.addEventListener('pointermove', silentStart, { once: true, passive: true });
-window.addEventListener('scroll', silentStart, { once: true, passive: true });
-window.addEventListener('touchstart', silentStart, { once: true, passive: true });
-window.addEventListener('pointerdown', silentStart, { once: true, passive: true });
+window.addEventListener('pointerdown', wakeAudio, { passive: true });
+window.addEventListener('touchstart', wakeAudio, { passive: true });
+window.addEventListener('pointermove', wakeAudio, { once: true, passive: true });
+window.addEventListener('scroll', wakeAudio, { once: true, passive: true });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && currentState === STATES.START) {
+    playOpeningAudio();
+  }
+});
 
-// START GAME: Starts gameplay immediately and stops opening song
+// START FLYING BUTTON: Explicitly starts gameplay and stops opening song
 startBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   startGame();
