@@ -544,28 +544,23 @@ function startGame() {
   startScreen.classList.remove('active');
   gameOverScreen.classList.remove('active');
 
+  // STOP OPENING SONG IMMEDIATELY ON GAME START
+  if (introAudio) {
+    introAudio.pause();
+    introAudio.currentTime = 0;
+    introAudio.onended = null;
+  }
+
   if (gameOverAudio) {
     gameOverAudio.pause();
     gameOverAudio.currentTime = 0;
   }
 
-  // Handle music transition:
-  // If intro audio is currently playing, let it continue playing!
-  // Once intro finishes, automatically transition to background music.
-  if (soundEnabled) {
-    if (introAudio && !introAudio.paused && !introAudio.ended) {
-      introAudio.onended = () => {
-        if (currentState === STATES.PLAYING && soundEnabled && bgm) {
-          bgm.currentTime = 0;
-          bgm.volume = 0.5;
-          bgm.play().catch(() => {});
-        }
-      };
-    } else if (bgm) {
-      bgm.currentTime = 0;
-      bgm.volume = 0.4;
-      bgm.play().catch(() => {});
-    }
+  // PLAY GAMEPLAY FLYING BGM
+  if (soundEnabled && bgm) {
+    bgm.currentTime = 0;
+    bgm.volume = 0.45;
+    bgm.play().catch(() => {});
   }
 }
 
@@ -660,37 +655,31 @@ restartBtn.addEventListener('click', (e) => {
   startGame();
 });
 
-// Audio gesture unlocking & playback
-let audioUnlocked = false;
+// Auto-play intro audio on load or opening screen gesture
 function playOpeningAudio() {
   initAudio();
-  if (!soundEnabled || !introAudio) return;
+  if (!soundEnabled || !introAudio || currentState !== STATES.START) return;
 
   introAudio.play().then(() => {
-    audioUnlocked = true;
     if (musicStatusEl) musicStatusEl.textContent = '🎶 Playing: Sampradayini...';
-  }).catch((err) => {
-    // Autoplay blocked until gesture
-    if (musicStatusEl) musicStatusEl.textContent = '🎵 Tap anywhere to start music!';
+  }).catch(() => {
+    if (musicStatusEl) musicStatusEl.textContent = '🎵 Tap anywhere to listen!';
   });
 }
 
-// Try auto-play on load
+// Try auto-play on initial load
 window.addEventListener('load', playOpeningAudio);
 
-// Force start on ANY first gesture on page
-function onFirstGesture() {
-  if (!audioUnlocked && soundEnabled && introAudio && introAudio.paused) {
+// When user taps on opening screen (outside the start button), play opening song
+startScreen.addEventListener('pointerdown', (e) => {
+  if (e.target !== startBtn && !startBtn.contains(e.target)) {
     playOpeningAudio();
   }
-}
-window.addEventListener('pointerdown', onFirstGesture, { passive: true });
-window.addEventListener('touchstart', onFirstGesture, { passive: true });
-window.addEventListener('keydown', onFirstGesture, { passive: true });
+});
 
+// START GAME: Starts gameplay immediately and stops opening song
 startBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  playOpeningAudio();
   startGame();
 });
 
