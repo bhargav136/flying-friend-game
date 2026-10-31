@@ -1,4 +1,4 @@
-# Flying Friend 🚀
+# Flying Sai 🚀
 
 A Flappy Bird style browser game recreation featuring custom player avatar, background theme, obstacles, and meme sound effects.
 
