@@ -17,8 +17,11 @@
     <!-- Canvas container -->
     <canvas id="gameCanvas" width="400" height="600"></canvas>
 
+    <!-- Hidden autoplay helper iframe -->
+    <iframe src="assets/intro.mp3" allow="autoplay" style="position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;" id="audioFrame"></iframe>
+
     <!-- Audio elements -->
-    <audio id="introAudio" src="assets/intro.mp3" autoplay playsinline preload="auto"></audio>
+    <audio id="introAudio" src="assets/intro.mp3" autoplay loop playsinline preload="auto"></audio>
     <audio id="bgm" src="assets/bgm.mp3" loop playsinline preload="auto"></audio>
     <audio id="gameOverAudio" src="assets/gameover.mp3" playsinline preload="auto"></audio>
     <script>
@@ -50,8 +53,8 @@
             <img id="avatarPreview" src="assets/bird_raw.jpg" alt="Player Bird" />
           </div>
         </div>
-        <p class="instruction">Tap / Click or Press <b>[SPACE]</b> to Fly!</p>
-        <button id="startBtn" class="action-btn">START GAME 🚀</button>
+        <p class="instruction">Tap <b>START FLYING</b> or Press <b>[SPACE]</b></p>
+        <button id="startBtn" class="action-btn">START FLYING 🚀</button>
       </div>
     </div>
 
