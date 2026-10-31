@@ -624,7 +624,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// Input Handlers
+// Input Handlers - Optimized for zero-latency mobile touch & desktop keys
 function handleAction() {
   if (currentState === STATES.START) {
     startGame();
@@ -633,11 +633,21 @@ function handleAction() {
   }
 }
 
-canvas.addEventListener('pointerdown', (e) => {
+// Zero-latency mobile touch
+canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
   handleAction();
+}, { passive: false });
+
+// Desktop click & non-touch pointers
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'touch') {
+    e.preventDefault();
+    handleAction();
+  }
 });
 
+// Keyboard controls
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.key === ' ' || e.code === 'ArrowUp') {
     e.preventDefault();
